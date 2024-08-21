@@ -47,17 +47,17 @@ class BlockParser {
       return List.empty();
     }
 
-    lexer.nextToken();
+    final returnToken = lexer.nextToken();
     switch (lexer.LookAhead()) {
       case TokenKind.TOKEN_EOF:
       case TokenKind.TOKEN_KW_END:
       case TokenKind.TOKEN_KW_ELSE:
       case TokenKind.TOKEN_KW_ELSEIF:
       case TokenKind.TOKEN_KW_UNTIL:
-        return const <Exp>[];
+        return <Exp>[NilExp(returnToken.line)];
       case TokenKind.TOKEN_SEP_SEMI:
         lexer.nextToken();
-        return const <Exp>[];
+        return <Exp>[NilExp(returnToken.line)];
       default:
         List<Exp> exps = ExpParser.parseExpList(lexer);
         if (lexer.LookAhead() == TokenKind.TOKEN_SEP_SEMI) {
