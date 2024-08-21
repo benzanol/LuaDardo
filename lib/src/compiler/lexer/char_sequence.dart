@@ -18,7 +18,7 @@ class CharSequence {
     _pos += n;
   }
 
-  bool startsWith(String prefix) {
+  bool startsWith(Pattern prefix) {
     return _str.startsWith(prefix, _pos);
   }
 

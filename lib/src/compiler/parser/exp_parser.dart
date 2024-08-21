@@ -249,7 +249,7 @@ class ExpParser {
     if (f != null) {
       return FloatExp(token.line, f);
     }
-    throw Exception("not a number: $token");
+    throw Exception("not a number: ${token.value}");
   }
 
   // functiondef ::= function funcbody
