@@ -414,9 +414,19 @@ class StringLib {
       tail = s!.substring(init - 1);
     }
 
-    var regExpMatch = _patternToRegexp(pattern, false).firstMatch(tail!);
-    if (regExpMatch == null) return null;
-    return [regExpMatch.group(0)];
+    final regExpMatch = _patternToRegexp(pattern, false).firstMatch(tail!);
+    if (regExpMatch == null) {
+      return null;
+    }
+
+    final groupCt = regExpMatch.groupCount;
+    if (groupCt == 0) {
+      // If there are no groups, return the entire match
+      return [regExpMatch.group(0)];
+    } else {
+      // If there is at least 1 group, then don't include the entire match
+      return regExpMatch.groups(List.generate(groupCt, (i) => i + 1));
+    }
   }
 
   // string.gsub (s, pattern, repl [, n])
