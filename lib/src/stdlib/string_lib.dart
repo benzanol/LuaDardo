@@ -312,7 +312,9 @@ class StringLib {
   /* PATTERN MATCHING */
 
 
-  static RegExp _patternToRegexp(String pattern) {
+  static RegExp _patternToRegexp(String pattern, bool plain) {
+    if (plain) return RegExp(RegExp.escape(pattern));
+
     const luaCharacterClassRegexps = {
       'a': '[a-zA-Z]',                             // letters
       'c': '[\x00-\x1F\x7F]',                      // control characters
@@ -350,40 +352,32 @@ class StringLib {
     var plain = ls.toBoolean(4);
 
     var range = find(s, pattern!, init, plain);
-    var start = range[0]!;
-    var end = range[1];
-
-    if (start < 0) {
+    if (range == null) {
       ls.pushNil();
       return 1;
     }
+
+    var start = range[0];
+    var end = range[1];
     ls.pushInteger(start);
     ls.pushInteger(end);
     return 2;
   }
 
-  static List<int?> find(String s, String pattern, int init, bool plain) {
+  static List<int>? find(String s, String pattern, int init, bool plain) {
     var tail = s;
     if (init > 1) {
       tail = s.substring(init - 1);
     }
 
-    int start;
-    if (plain) {
-      start = tail.indexOf(pattern);
-    } else {
-      start = tail.indexOf(_patternToRegexp(pattern));
-    }
-    var end = start + pattern.length - 1;
+    final regexp = _patternToRegexp(pattern, plain);
 
-    if (start >= 0) {
-      start += s.length - tail.length + 1;
-      end += s.length - tail.length + 1;
-    }
+    final match = regexp.firstMatch(tail);
+    if (match == null) return null;
 
-    return List<int?>.filled(2,null)
-    ..[0] = start
-    ..[1] = end;
+    final start = match.start + init;
+    final end = match.end + init - 1;
+    return [start, end];
   }
 
   // string.match (s, pattern [, init])
@@ -420,7 +414,7 @@ class StringLib {
       tail = s!.substring(init - 1);
     }
 
-    var regExpMatch = _patternToRegexp(pattern).firstMatch(tail!);
+    var regExpMatch = _patternToRegexp(pattern, false).firstMatch(tail!);
     if (regExpMatch == null) return null;
     return [regExpMatch.group(0)];
   }
@@ -442,7 +436,7 @@ class StringLib {
   }
 
   static List<dynamic> gsub(String? s, String pattern, String? repl, int n) {
-    final regExp = _patternToRegexp(pattern);
+    final regExp = _patternToRegexp(pattern, false);
     RegExpMatch? regMatch;
 
     List<Match> indexes = [];
