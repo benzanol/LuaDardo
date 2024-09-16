@@ -1,7 +1,6 @@
-
 import 'dart:math' as math;
-import '../../lua.dart';
 
+import '../../lua.dart';
 import 'constants.dart' if (dart.library.html) 'constants_js.dart';
 
 class MathLib{
@@ -99,10 +98,10 @@ class MathLib{
 
   static int _min(LuaState ls){
     var n = ls.getTop(); /* number of arguments */
-    var imin = 1;        /* index of current maximum value */
+    var imin = 1;        /* index of current minimum value */
     ls.argCheck(n >= 1, 1, "value expected");
     for (var i = 2; i <= n; i++){
-      if(ls.compare(imin, i, CmpOp.luaOpLt)){
+      if(!ls.compare(imin, i, CmpOp.luaOpLt)){
         imin = i;
       }
     }
@@ -301,4 +300,3 @@ class MathLib{
 
 const rpd = math.pi/180;
 const double ln10 = 2.3025850929940456840179914546843642076011014886288;
-
