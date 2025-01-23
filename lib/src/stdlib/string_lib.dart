@@ -303,7 +303,7 @@ class StringLib {
       return sprintf(tag, [ls.toNumber(argIdx)]);
       case 's':
       case 'q': // string
-      return sprintf(tag, [ls.toString2(argIdx)]);
+      return sprintf("%s", [ls.toString2(argIdx)]);
       default:
       throw Exception("todo! tag=" + tag);
     }
@@ -315,7 +315,7 @@ class StringLib {
   static RegExp _patternToRegexp(String pattern, bool plain) {
     if (plain) return RegExp(RegExp.escape(pattern));
 
-    const luaCharacterClassRegexps = {
+    const luaCharacterClassReplacements = {
       'a': '[a-zA-Z]',                             // letters
       'c': '[\x00-\x1F\x7F]',                      // control characters
       'd': '[0-9]',                                // digits
@@ -326,10 +326,11 @@ class StringLib {
       'w': '[a-zA-Z0-9]',                          // alphanumeric
       'x': '[0-9a-fA-F]',                          // hex digits
       'z': '\x00',                                 // zero byte
+      '%': '%%',
     };
     final replaceChars = pattern.replaceAllMapped(RegExp('%(.)'), (match) {
         final char = match.group(1)!;
-        return luaCharacterClassRegexps[char] ?? char;
+        return luaCharacterClassReplacements[char] ?? '\\$char';
     });
     return RegExp(replaceChars);
   }
