@@ -23,16 +23,16 @@ class OSLib {
   }
 
   // os.clock ()
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.clock
-// lua-5.3.4/src/loslib.c#os_clock()
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.clock
+  // lua-5.3.4/src/loslib.c#os_clock()
   static int _osClock(LuaState ls) {
     ls.pushNumber(DateTime.now().millisecondsSinceEpoch/1000);
     return 1;
   }
 
-// os.difftime (t2, t1)
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.difftime
-// lua-5.3.4/src/loslib.c#os_difftime()
+  // os.difftime (t2, t1)
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.difftime
+  // lua-5.3.4/src/loslib.c#os_difftime()
   static int _osDiffTime(LuaState ls) {
     var t2 = ls.checkInteger(1)!;
     var t1 = ls.checkInteger(2)!;
@@ -40,14 +40,14 @@ class OSLib {
     return 1;
   }
 
-// os.time ([table])
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.time
-// lua-5.3.4/src/loslib.c#os_time()
+  // os.time ([table])
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.time
+  // lua-5.3.4/src/loslib.c#os_time()
   static int _osTime(LuaState ls) {
     if (ls.isNoneOrNil(1)) {
       /* called without args? */
       var t =
-          DateTime.now().millisecondsSinceEpoch ~/ 1000; /* get current time */
+      DateTime.now().millisecondsSinceEpoch ~/ 1000; /* get current time */
       ls.pushInteger(t);
     } else {
       ls.checkType(1, LuaType.luaTable);
@@ -59,14 +59,14 @@ class OSLib {
       var year = _getField(ls, "year", -1);
       // todo: isdst
       var t =
-          DateTime(year, month, day, hour, min, sec).millisecondsSinceEpoch ~/
-              1000;
+      DateTime(year, month, day, hour, min, sec).millisecondsSinceEpoch ~/
+      1000;
       ls.pushInteger(t);
     }
     return 1;
   }
 
-// lua-5.3.4/src/loslib.c#getfield()
+  // lua-5.3.4/src/loslib.c#getfield()
   static int _getField(LuaState ls, String key, int dft) {
     var t = ls.getField(-1, key); /* get field and its type */
     var res = ls.toIntegerX(-1);
@@ -85,9 +85,9 @@ class OSLib {
     return res;
   }
 
-// os.date ([format [, time]])
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.date
-// lua-5.3.4/src/loslib.c#os_date()
+  // os.date ([format [, time]])
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.date
+  // lua-5.3.4/src/loslib.c#os_date()
   static int _osDate(LuaState ls) {
     var format = ls.optString(1, "%c")!;
     DateTime t;
@@ -113,16 +113,14 @@ class OSLib {
       _setField(ls, "year", t.year);
       _setField(ls, "wday", t.weekday);
       _setField(ls, "yday", _getYearDay(t));
-    } else if (format == "%c") {
-      ls.pushString(t.toString());
     } else {
-      ls.pushString(format); // TODO
+      ls.pushString(_dateFormat(format, t)); // TODO
     }
 
     return 1;
   }
 
-  static int _getYearDay(DateTime date){
+  static int _getYearDay(DateTime date) {
     var monthDay = [31,28,31,30,31,30,31,31,30,31,30,31];
 
     if(date.year%4==0 && date.year%100!=0) monthDay[1] = 29;
@@ -136,13 +134,70 @@ class OSLib {
     return date.day + sum;
   }
 
+  static String _dateFormat(String format, DateTime dateTime) {
+    final Map<String, String> replacements = {
+      '%a': _getWeekdayAbbreviated(dateTime),
+      '%A': _getWeekdayFull(dateTime),
+      '%b': _getMonthAbbreviated(dateTime),
+      '%B': _getMonthFull(dateTime),
+      '%c': dateTime.toLocal().toString(),
+      '%d': dateTime.day.toString().padLeft(2, '0'),
+      '%H': dateTime.hour.toString().padLeft(2, '0'),
+      '%I': (dateTime.hour % 12 == 0 ? 12 : dateTime.hour % 12).toString().padLeft(2, '0'),
+      '%j': dateTime.difference(DateTime(dateTime.year)).inDays.toString().padLeft(3, '0'),
+      '%m': dateTime.month.toString().padLeft(2, '0'),
+      '%M': dateTime.minute.toString().padLeft(2, '0'),
+      '%p': dateTime.hour < 12 ? 'AM' : 'PM',
+      '%S': dateTime.second.toString().padLeft(2, '0'),
+      '%U': _getWeekNumber(dateTime, isSundayFirst: true).toString().padLeft(2, '0'),
+      '%w': dateTime.weekday == 7 ? '0' : dateTime.weekday.toString(),
+      '%W': _getWeekNumber(dateTime, isSundayFirst: false).toString().padLeft(2, '0'),
+      '%x': '${dateTime.month.toString().padLeft(2, '0')}/${dateTime.day.toString().padLeft(2, '0')}/${dateTime.year}',
+      '%X': '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}',
+      '%y': dateTime.year.toString().substring(2),
+      '%Y': dateTime.year.toString(),
+      '%%': '%',
+    };
+
+    String result = format;
+    replacements.forEach((key, value) {
+        result = result.replaceAll(key, value);
+    });
+
+    return result;
+  }
+
+  static String _getWeekdayAbbreviated(DateTime dateTime) {
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateTime.weekday % 7];
+  }
+
+  static String _getWeekdayFull(DateTime dateTime) {
+    return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dateTime.weekday % 7];
+  }
+
+  static String _getMonthAbbreviated(DateTime dateTime) {
+    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][dateTime.month - 1];
+  }
+
+  static String _getMonthFull(DateTime dateTime) {
+    return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][dateTime.month - 1];
+  }
+
+  static int _getWeekNumber(DateTime dateTime, {required bool isSundayFirst}) {
+    final firstDayOfYear = DateTime(dateTime.year, 1, 1);
+    final dayOfYear = dateTime.difference(firstDayOfYear).inDays + 1;
+    final weekDayAdjustment = isSundayFirst ? firstDayOfYear.weekday % 7 : (firstDayOfYear.weekday + 6) % 7;
+
+    return ((dayOfYear + weekDayAdjustment) / 7).ceil() - 1;
+  }
+
   static void _setField(LuaState ls, String key, int value) {
     ls.pushInteger(value);
     ls.setField(-2, key);
   }
 
-// os.remove (filename)
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.remove
+  // os.remove (filename)
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.remove
   static int _osRemove(LuaState ls) {
     var filename = ls.checkString(1)!;
 
@@ -157,8 +212,8 @@ class OSLib {
     }
   }
 
-// os.rename (oldname, newname)
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.rename
+  // os.rename (oldname, newname)
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.rename
   static int _osRename(LuaState ls) {
     var oldName = ls.checkString(1)!;
     var newName = ls.checkString(2)!;
@@ -174,15 +229,15 @@ class OSLib {
     }
   }
 
-// os.tmpname ()
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.tmpname
+  // os.tmpname ()
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.tmpname
   static int _osTmpName(LuaState ls) {
     throw ("todo: osTmpName!");
   }
 
-// os.getenv (varname)
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.getenv
-// lua-5.3.4/src/loslib.c#os_getenv()
+  // os.getenv (varname)
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.getenv
+  // lua-5.3.4/src/loslib.c#os_getenv()
   static int _osGetEnv(LuaState ls) {
     var key = ls.checkString(1);
     var env = Platform.environment[key!]!;
@@ -195,8 +250,8 @@ class OSLib {
     return 1;
   }
 
-// os.execute ([command])
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.execute
+  // os.execute ([command])
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.execute
   static int _osExecute(LuaState ls) {
     var cmd = ls.checkString(1)!;
     var args = cmd.split(" ");
@@ -209,9 +264,9 @@ class OSLib {
     return 0;
   }
 
-// os.exit ([code [, close]])
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.exit
-// lua-5.3.4/src/loslib.c#os_exit()
+  // os.exit ([code [, close]])
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.exit
+  // lua-5.3.4/src/loslib.c#os_exit()
   static int _osExit(LuaState ls) {
     if (ls.isBoolean(1)) {
       if (ls.toBoolean(1)) {
@@ -225,8 +280,8 @@ class OSLib {
     }
   }
 
-// os.setlocale (locale [, category])
-// http://www.lua.org/manual/5.3/manual.html#pdf-os.setlocale
+  // os.setlocale (locale [, category])
+  // http://www.lua.org/manual/5.3/manual.html#pdf-os.setlocale
   static int _osSetLocale(LuaState ls) {
     throw ("todo: osSetLocale!");
   }
